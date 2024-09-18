@@ -3,6 +3,122 @@
  * Provides comprehensive YouTube video analysis with Shorts support
  */
 
+// ===== API MANAGEMENT CLASS =====
+
+/**
+ * Manages YouTube API interactions with rate limiting and error handling
+ */
+class YouTubeApiManager {
+  constructor() {
+    this.maxRetries = 3;
+    this.baseDelay = 1000; // 1 second
+    this.maxDelay = 30000; // 30 seconds
+  }
+
+  /**
+   * Validates the API key by making a test request
+   * @param {string} apiKey - The API key to validate
+   * @returns {boolean} True if API key is valid
+   */
+  validateApiKey(apiKey) {
+    try {
+      const testUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=test&maxResults=1&key=${apiKey}`;
+      const response = UrlFetchApp.fetch(testUrl);
+      return response.getResponseCode() === 200;
+    } catch (error) {
+      Logger.log(`API key validation failed: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Makes an API request with exponential backoff for rate limiting
+   * @param {string} url - The API endpoint URL
+   * @param {number} retryCount - Current retry attempt (default: 0)
+   * @returns {Object} Parsed JSON response
+   */
+  makeApiRequest(url, retryCount = 0) {
+    try {
+      const response = UrlFetchApp.fetch(url);
+      const responseCode = response.getResponseCode();
+
+      if (responseCode === 200) {
+        return JSON.parse(response.getContentText());
+      }
+
+      // Handle different error types
+      if (responseCode === 429) {
+        // Rate limiting - implement exponential backoff
+        if (retryCount < this.maxRetries) {
+          const delay = Math.min(this.baseDelay * Math.pow(2, retryCount), this.maxDelay);
+          Logger.log(`Rate limited. Retrying in ${delay}ms (attempt ${retryCount + 1})`);
+          Utilities.sleep(delay);
+          return this.makeApiRequest(url, retryCount + 1);
+        }
+        throw new Error("Rate limit exceeded. Please try again later.");
+      }
+
+      if (responseCode === 403) {
+        const errorData = JSON.parse(response.getContentText());
+        if (errorData.error.errors[0].reason === "quotaExceeded") {
+          throw new Error("Daily API quota exceeded. Please try again tomorrow or upgrade your quota.");
+        }
+        throw new Error("API access forbidden. Please check your API key permissions.");
+      }
+
+      if (responseCode === 401) {
+        throw new Error("Invalid API key. Please check your YouTube API key configuration.");
+      }
+
+      throw new Error(`API request failed with status ${responseCode}`);
+
+    } catch (error) {
+      if (retryCount < this.maxRetries && error.message.includes("network")) {
+        const delay = this.baseDelay * Math.pow(2, retryCount);
+        Logger.log(`Network error. Retrying in ${delay}ms (attempt ${retryCount + 1})`);
+        Utilities.sleep(delay);
+        return this.makeApiRequest(url, retryCount + 1);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches video search results from YouTube API
+   * @param {string} query - Search query
+   * @param {number} maxResults - Maximum results per page
+   * @param {string} pageToken - Page token for pagination
+   * @param {string} apiKey - YouTube API key
+   * @returns {Object} Search results data
+   */
+  searchVideos(query, maxResults, pageToken, apiKey) {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&pageToken=${pageToken}&key=${apiKey}`;
+    return this.makeApiRequest(url);
+  }
+
+  /**
+   * Fetches detailed video information in batch
+   * @param {string} videoIds - Comma-separated video IDs
+   * @param {string} apiKey - YouTube API key
+   * @returns {Object} Video details data
+   */
+  getVideoDetails(videoIds, apiKey) {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails,snippet&id=${videoIds}&key=${apiKey}`;
+    return this.makeApiRequest(url);
+  }
+
+  /**
+   * Fetches channel information in batch
+   * @param {string} channelIds - Comma-separated channel IDs
+   * @param {string} apiKey - YouTube API key
+   * @returns {Object} Channel details data
+   */
+  getChannelDetails(channelIds, apiKey) {
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelIds}&key=${apiKey}`;
+    return this.makeApiRequest(url);
+  }
+}
+
 /**
  * Retrieves the YouTube API key from PropertiesService
  * @returns {string|null} The API key or null if not found
@@ -15,6 +131,33 @@ function getApiKeyFromProperties() {
     return null;
   }
   return apiKey;
+}
+
+/**
+ * Monitors and warns about API quota usage
+ * @param {number} requestCount - Number of API requests made
+ */
+function monitorQuotaUsage(requestCount) {
+  const dailyQuota = 10000; // Default YouTube API daily quota
+  const warningThreshold = 0.8; // Warn at 80% usage
+  
+  // Store daily usage in PropertiesService
+  const today = new Date().toDateString();
+  const usageKey = `quota_usage_${today}`;
+  const currentUsage = parseInt(PropertiesService.getScriptProperties().getProperty(usageKey) || "0");
+  const newUsage = currentUsage + (requestCount * 100); // Approximate cost per request
+  
+  PropertiesService.getScriptProperties().setProperty(usageKey, newUsage.toString());
+  
+  // Warn user if approaching quota limit
+  if (newUsage > dailyQuota * warningThreshold) {
+    const remainingQuota = dailyQuota - newUsage;
+    SpreadsheetApp.getUi().alert(
+      `Quota Warning: You've used approximately ${Math.round((newUsage/dailyQuota)*100)}% of your daily API quota.\n` +
+      `Estimated remaining quota: ${remainingQuota} units.\n\n` +
+      `Consider reducing result counts or waiting until tomorrow for quota reset.`
+    );
+  }
 }
 
 /**
@@ -46,6 +189,15 @@ function fetchYouTubeData() {
   const apiKey = getApiKeyFromProperties();
   if (!apiKey) {
     return; // Stop execution if no API key is configured
+  }
+
+  // Initialize API manager
+  const apiManager = new YouTubeApiManager();
+  
+  // Validate API key before proceeding
+  if (!apiManager.validateApiKey(apiKey)) {
+    SpreadsheetApp.getUi().alert("Invalid API key. Please check your YouTube API key configuration.");
+    return;
   }
   
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -104,30 +256,17 @@ function fetchYouTubeData() {
     let totalFetched = 0;
 
     do {
-      // Make paginated API requests
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&maxResults=${maxResults}&pageToken=${pageToken}&key=${apiKey}`;
-      const searchResponse = UrlFetchApp.fetch(searchUrl);
-
-      if (!searchResponse || searchResponse.getResponseCode() !== 200) {
-        throw new Error("Search API call failed");
-      }
-
-      const searchData = JSON.parse(searchResponse.getContentText());
+      // Make paginated API requests using the API manager
+      const searchData = apiManager.searchVideos(searchQuery, maxResults, pageToken, apiKey);
       pageToken = searchData.nextPageToken; // Get next page token
 
       // Collect Video IDs and Channel IDs for batch processing
       const videoIds = searchData.items.map(item => item.id.videoId).join(",");
       const channelIds = searchData.items.map(item => item.snippet.channelId).join(",");
 
-      // Fetch video details in batch
-      const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails,snippet&id=${videoIds}&key=${apiKey}`;
-      const videoDetailsResponse = UrlFetchApp.fetch(videoDetailsUrl);
-      const videoDetailsData = JSON.parse(videoDetailsResponse.getContentText());
-
-      // Fetch channel details in batch
-      const channelDetailsUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelIds}&key=${apiKey}`;
-      const channelDetailsResponse = UrlFetchApp.fetch(channelDetailsUrl);
-      const channelDetailsData = JSON.parse(channelDetailsResponse.getContentText());
+      // Fetch video and channel details in batch using API manager
+      const videoDetailsData = apiManager.getVideoDetails(videoIds, apiKey);
+      const channelDetailsData = apiManager.getChannelDetails(channelIds, apiKey);
 
       // Create channel subscribers mapping for quick lookup
       const channelSubscribersMap = {};
@@ -252,9 +391,39 @@ function fetchYouTubeData() {
 
     // Display completion message
     sheet.getRange("F1").setValue(`Fetching completed. Total: ${totalFetched} items.`);
+    
+    // Monitor quota usage (approximate calculation)
+    const apiRequestCount = Math.ceil(totalFetched / 50) * 3; // Search + Video Details + Channel Details
+    monitorQuotaUsage(apiRequestCount);
   } catch (error) {
     sheet.getRange("F1").setValue(`Error: ${error.message}`);
-    SpreadsheetApp.getUi().alert(`An error occurred during API call: ${error.message}`);
+    
+    // Provide user-friendly error messages with suggestions
+    let userMessage = `An error occurred: ${error.message}\n\n`;
+    
+    if (error.message.includes("quota")) {
+      userMessage += "Suggestions:\n" +
+                    "• Wait until tomorrow for quota reset\n" +
+                    "• Consider upgrading your Google Cloud quota\n" +
+                    "• Reduce the number of results requested";
+    } else if (error.message.includes("API key")) {
+      userMessage += "Suggestions:\n" +
+                    "• Check that your API key is correct\n" +
+                    "• Ensure YouTube Data API v3 is enabled\n" +
+                    "• Verify API key permissions in Google Cloud Console";
+    } else if (error.message.includes("Rate limit")) {
+      userMessage += "Suggestions:\n" +
+                    "• Wait a few minutes before trying again\n" +
+                    "• Reduce the number of results requested\n" +
+                    "• Consider spreading requests over time";
+    } else {
+      userMessage += "Suggestions:\n" +
+                    "• Check your internet connection\n" +
+                    "• Try again in a few minutes\n" +
+                    "• Verify your search terms are valid";
+    }
+    
+    SpreadsheetApp.getUi().alert(userMessage);
   }
 }
 
