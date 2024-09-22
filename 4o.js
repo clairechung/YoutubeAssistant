@@ -235,12 +235,15 @@ function fetchYouTubeData() {
       "Subscribers",
       "Upload Date",
       "Tags",
+      "Hashtags",
       "Likes",
       "Like Rate (%)",
       "Comment Rate (%)",
+      "Engagement Rate (%)",
       "Comments",
       "Duration",
       "Content Type",
+      "High Engagement",
       "Captions Available"
     ];
 
@@ -297,19 +300,22 @@ function fetchYouTubeData() {
         const captionsAvailable = item.contentDetails.caption;
         const category = getCategoryName(item.snippet.categoryId);
 
-        // Determine video format based on duration
-        const contentType = getContentType(item.contentDetails.duration);
+        // Enhanced content type classification and analytics
+        const contentTypeInfo = getContentType(item.contentDetails.duration);
+        const hashtags = extractHashtags(title, description);
+        const shortsMetrics = calculateShortsMetrics(item.statistics, contentTypeInfo.durationSeconds);
 
         const channelSubscribers = channelSubscribersMap[channelId]
           ? formatNumber(channelSubscribersMap[channelId])
           : "No subscriber data";
         const tags = item.snippet.tags ? item.snippet.tags.join(", ") : "";
+        const hashtagsText = hashtags.length > 0 ? hashtags.join(", ") : "";
 
         const likeToViewPercentage = viewCount > 0
-          ? `${((likeCount / viewCount) * 100).toFixed(2)}%`
+          ? `${shortsMetrics.likeRate.toFixed(2)}%`
           : "No views";
         const commentToViewPercentage = commentCount > 0
-          ? `${((commentCount / viewCount) * 100).toFixed(2)}%`
+          ? `${shortsMetrics.commentRate.toFixed(2)}%`
           : "No comments";
 
         videoData.push([
@@ -322,27 +328,34 @@ function fetchYouTubeData() {
           channelSubscribers,
           publishDate,
           tags,
+          hashtagsText,
           formatNumber(likeCount),
           likeToViewPercentage,
           commentToViewPercentage,
+          `${shortsMetrics.engagementRate.toFixed(2)}%`,
           formatNumber(commentCount),
           duration,
-          contentType,
+          contentTypeInfo.type,
+          shortsMetrics.isHighEngagement ? "Yes" : "No",
           captionsAvailable ? "Yes" : "No",
         ]);
       });
 
-      // Add notes for long descriptions and tags
+      // Add notes for long descriptions, tags, and hashtags
       videoData.forEach((row, index) => {
         const item = videoDetailsData.items[index];
         const description = item.snippet.description || "";
         const tags = item.snippet.tags ? item.snippet.tags.join(", ") : "";
+        const hashtags = extractHashtags(item.snippet.title, description);
         
         if (description.length > 100) {
           sheet.getRange(3 + totalFetched + index, 5).setNote(description);
         }
         if (tags.length > 50) {
           sheet.getRange(3 + totalFetched + index, 9).setNote(tags);
+        }
+        if (hashtags.length > 0) {
+          sheet.getRange(3 + totalFetched + index, 10).setNote(`Full hashtags: ${hashtags.join(", ")}`);
         }
       });
 
@@ -355,16 +368,19 @@ function fetchYouTubeData() {
       sheet.setColumnWidths(3, 1, 200); // Video title
       sheet.setColumnWidths(5, 1, 300); // Description
       sheet.setColumnWidths(6, 1, 150); // Channel name
-      sheet.setColumnWidths(7, 3, 100); // Subscribers, upload date, duration
-      sheet.setColumnWidths(10, 4, 70); // Likes, like rate, comment rate, comments
+      sheet.setColumnWidths(7, 3, 100); // Subscribers, upload date, tags
+      sheet.setColumnWidths(10, 1, 120); // Hashtags
+      sheet.setColumnWidths(11, 5, 70); // Likes, rates, engagement, comments
+      sheet.setColumnWidths(16, 3, 80); // Duration, content type, high engagement
 
       // Configure text wrapping and alignment
       sheet.getRange(3, 3, videoData.length).setWrap(true); // Video title wrapping
       sheet.getRange(3, 5, videoData.length).setWrap(true); // Description wrapping
-      sheet.getRange(3, 7, videoData.length, 10).setHorizontalAlignment("right"); // Right-align numeric columns
+      sheet.getRange(3, 10, videoData.length).setWrap(true); // Hashtags wrapping
+      sheet.getRange(3, 7, videoData.length, 13).setHorizontalAlignment("right"); // Right-align numeric columns
 
       // Set up content type dropdown validation
-      const formatRange = sheet.getRange(3 + totalFetched, 15, videoData.length, 1);
+      const formatRange = sheet.getRange(3 + totalFetched, 17, videoData.length, 1);
       const rule = SpreadsheetApp.newDataValidation()
         .requireValueInList(["Shorts", "Mid-form", "Long-form"])
         .build();
@@ -486,9 +502,9 @@ function formatDuration(isoDuration) {
 }
 
 /**
- * Determines content type based on video duration
+ * Determines content type based on video duration with enhanced classification
  * @param {string} isoDuration - ISO 8601 duration string
- * @returns {string} Content type: "Shorts", "Mid-form", or "Long-form"
+ * @returns {Object} Content type information with duration in seconds
  */
 function getContentType(isoDuration) {
   const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
@@ -498,9 +514,74 @@ function getContentType(isoDuration) {
 
   const totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
-  if (totalSeconds <= 60) return "Shorts";
-  if (totalSeconds <= 600) return "Mid-form"; // Up to 10 minutes
-  return "Long-form";
+  let type, category;
+  if (totalSeconds <= 60) {
+    type = "Shorts";
+    category = "short-form";
+  } else if (totalSeconds <= 600) { // Up to 10 minutes
+    type = "Mid-form";
+    category = "mid-form";
+  } else {
+    type = "Long-form";
+    category = "long-form";
+  }
+
+  return {
+    type,
+    category,
+    durationSeconds: totalSeconds,
+    isShorts: totalSeconds <= 60
+  };
+}
+
+/**
+ * Extracts hashtags from video title and description
+ * @param {string} title - Video title
+ * @param {string} description - Video description
+ * @returns {string[]} Array of hashtags found
+ */
+function extractHashtags(title, description) {
+  const text = `${title} ${description}`;
+  const hashtagRegex = /#[\w\u0590-\u05ff]+/g;
+  const hashtags = text.match(hashtagRegex) || [];
+  
+  // Remove duplicates and return unique hashtags
+  return [...new Set(hashtags.map(tag => tag.toLowerCase()))];
+}
+
+/**
+ * Calculates Shorts-specific engagement metrics
+ * @param {Object} stats - Video statistics object
+ * @param {number} durationSeconds - Video duration in seconds
+ * @returns {Object} Shorts-specific metrics
+ */
+function calculateShortsMetrics(stats, durationSeconds) {
+  const viewCount = parseInt(stats.viewCount) || 0;
+  const likeCount = parseInt(stats.likeCount) || 0;
+  const commentCount = parseInt(stats.commentCount) || 0;
+  
+  const metrics = {
+    engagementRate: 0,
+    likeRate: 0,
+    commentRate: 0,
+    viewsPerSecond: 0,
+    isHighEngagement: false
+  };
+
+  if (viewCount > 0) {
+    metrics.engagementRate = ((likeCount + commentCount) / viewCount) * 100;
+    metrics.likeRate = (likeCount / viewCount) * 100;
+    metrics.commentRate = (commentCount / viewCount) * 100;
+    
+    if (durationSeconds > 0) {
+      metrics.viewsPerSecond = viewCount / durationSeconds;
+    }
+    
+    // Consider high engagement for Shorts if engagement rate > 5%
+    metrics.isHighEngagement = durationSeconds <= 60 && metrics.engagementRate > 5;
+  }
+
+  return metrics;
 }
 
 /**
