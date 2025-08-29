@@ -6,7 +6,7 @@ A simple YouTube analytics tool for Google Sheets. Analyze videos from Shorts to
 
 - **Shorts Support**: Dedicated analytics for videos ≤60 seconds
 - **Detailed Metrics**: Views, likes, comments, subscriber counts, engagement rates
-- **Trend Analysis**: Hashtag extraction and upload pattern insights
+- **Trend Analysis**: Hashtag extraction and content categorization
 - **Real-time Progress**: Live updates while fetching data
 - **Performance Score**: 0-100 composite performance rating
 
@@ -25,24 +25,19 @@ A simple YouTube analytics tool for Google Sheets. Analyze videos from Shorts to
 - Visit [Google Cloud Console](https://console.cloud.google.com/)
 - Create a new project or select existing one
 - Enable **YouTube Data API v3** in APIs & Services → Library
-- Create credentials → API Key
-- Copy the API key
+- Create credentials → API Key and Copy the API key
 
 ### 3. Configure API Key
-**Option A: Use the built-in function**
-1. Find the `setupApiKey()` function in the code
-2. Replace `"YOUR_API_KEY_HERE"` with your actual API key
-3. Run the `setupApiKey` function once
-
-**Option B: Use the menu**
-1. Refresh your Google Sheet
+**Option A: Use the menu (Recommended)**
+1. Refresh your Google Sheet to see the YouTube Assistant menu
 2. Click **YouTube Assistant** → **Configure API Key** from the menu
 3. Enter your API key when prompted
+4. Click OK to save
 
-### 4. Start Using
-1. Put search term in cell **B1** (e.g., "cooking recipes")
-2. Put number of results in cell **D1** (e.g., 25)
-3. Run **YouTube Assistant** → **Fetch YouTube Data** from the menu
+**Option B: Edit the code directly**
+1. Find the `setupApiKey()` function in the Apps Script editor
+2. Replace `"YOUR_API_KEY_HERE"` with your actual API key
+3. Run the `setupApiKey` function once from the Apps Script editor
 
 ## How to Use
 
@@ -55,48 +50,61 @@ A simple YouTube analytics tool for Google Sheets. Analyze videos from Shorts to
 
 The tool provides these metrics for each video:
 
-- **Thumbnail**: Clickable video preview
-- **Title**: Clickable link to video
-- **Views/Likes/Comments**: Basic engagement metrics
-- **Channel**: Creator name and subscriber count
-- **Duration**: Video length (auto-categorizes as Shorts/Mid-form/Long-form)
-- **Performance Score**: 0-100 rating based on engagement
+- **Category**: Video category (e.g., Education, Entertainment)
+- **Thumbnail**: Clickable video preview image
+- **Video Title**: Clickable link to the video
+- **Views**: Total view count
+- **Description**: Video description (truncated for display)
+- **Channel Name**: Creator name
+- **Subscribers**: Channel subscriber count
 - **Upload Date**: When the video was published
-- **Hashtags**: Extracted from title and description
+- **Tags**: Video tags from creator
+- **Hashtags**: Extracted hashtags from title and description
+- **Likes**: Total like count
+- **Like Rate (%)**: Likes as percentage of views
+- **Comment Rate (%)**: Comments as percentage of views
+- **Engagement Rate (%)**: Combined engagement metric
+- **Comments**: Total comment count
+- **Duration**: Video length
+- **Content Type**: Shorts/Mid-form/Long-form categorization
+- **Performance Score**: 0-100 composite rating
+- **Views/Day**: Average daily views since upload
+- **High Engagement**: Yes/No indicator for top performers
+- **Captions Available**: Whether video has captions
 
 ## Tips
 
 - Start with 10-25 results for quick analysis
 - Use specific keywords for better results
-- Check the content analysis summary at the bottom for insights
 - Sort by Performance Score to find top content
+- Use the built-in filters to analyze data
+- Check engagement rates to identify successful content patterns
 
 ## Troubleshooting
 
 **"Execution started" but nothing happens?**
 1. Check the **Execution log** in Apps Script for error messages
 2. Run **YouTube Assistant** → **Test Setup** to check if everything is configured
-3. Make sure you replaced `"YOUR_API_KEY_HERE"` with your actual API key
+3. Make sure you configured your API key using the menu or setupApiKey function
 
 **Menu not showing up?**
 1. Refresh your Google Sheet (F5 or Ctrl+R)
-2. Check if the `onOpen()` function ran successfully in Apps Script
-3. Try running `onOpen()` manually in the Apps Script editor
+2. Try running the script again from Apps Script
 
 **"Invalid API key" error?**
-- Double-check your API key is copied correctly
+- Double-check your API key is copied correctly (no extra spaces)
 - Make sure YouTube Data API v3 is enabled in Google Cloud Console
-- Run the **Test Setup** function to verify configuration
-
-**Hitting quota limits?**
-- Wait until tomorrow (quota resets daily)
-- Reduce the number of results per search
-- Default quota is 10,000 units/day, each search uses ~100-300 units
+- Try reconfiguring using **YouTube Assistant** → **Configure API Key**
+- Run **YouTube Assistant** → **Test Setup** to verify configuration
 
 **Tool running slowly?**
 - Use fewer results (10-25 for quick analysis)
 - Try more specific search terms
 - Check your internet connection
+
+**Getting quota or rate limit errors?**
+- Reduce the number of results per search
+- Wait a few minutes before trying again
 
 **Still having issues?**
 1. Run **YouTube Assistant** → **Test Setup** from the menu
