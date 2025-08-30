@@ -1,61 +1,97 @@
+<div align="center">
+
 # 💬 YouTube Assistant
 
 [![GitHub stars](https://img.shields.io/github/stars/clairechung/YoutubeAssistant?style=social)](https://github.com/clairechung/YoutubeAssistant/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/clairechung/YoutubeAssistant?style=social)](https://github.com/clairechung/YoutubeAssistant/network)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![GitHub License](https://img.shields.io/github/license/clairechung/YoutubeAssistant)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
 [![Google Apps Script](https://img.shields.io/badge/Google%20Apps%20Script-4285F4?logo=google&logoColor=white)](https://script.google.com/)
+![YouTube API](https://img.shields.io/badge/YouTube%20API-FF0000?logo=youtube&logoColor=white)
 
-> **Transform YouTube research into actionable insights with Google Sheets**
+</div>
+
+<div align="center">
+
+### 🚀 Transform YouTube research into actionable insights with Google Sheets
+
+**Perfect for content creators, marketers, and researchers who need to understand YouTube trends without expensive analytics platforms.**
+
+</div>
+
+---
 
 A powerful YouTube analytics tool that turns complex video data into clear, actionable insights. Perfect for content creators, marketers, and researchers who need to understand YouTube trends without expensive analytics platforms.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Why YouTube Assistant?](#-why-youtube-assistant)
-- [Features](#features)
+- [Why YouTube Assistant?](#why-youtube-assistant)
+- [Features](#-key-features)
 - [Setup](#setup)
 - [What You Get](#what-you-get)
 - [How to Use](#how-to-use)
 - [Data Columns](#data-columns)
 - [Use Cases & Success Stories](#use-cases--success-stories)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#-contributing)
+- [Contributing & Support](#-contributing--support)
 
-## 🚀 Why YouTube Assistant?
+## Why YouTube Assistant?
 
-- **💰 Completely Free**: No expensive analytics subscriptions needed - 100% free forever!
-- **⚡ Fast Setup**: Ready in 1 minute with Google Sheets
-- **📈 Deep Insights**: 20+ metrics including engagement rates, performance scores, and trend analysis
-- **🎯 Smart Analysis**: Automatically identifies high-performing content and content gaps
-- **📱 Shorts Ready**: Dedicated analytics for YouTube Shorts (≤60 seconds)
+<div align="center">
 
-## Features
+💰 `Completely Free` • ⚡ `1-Minute Setup` • 📈 `20+ Metrics` • 🎯 `Smart Analysis`
 
-- **Shorts Support**: Dedicated analytics for videos ≤60 seconds
-- **Detailed Metrics**: Views, likes, comments, subscriber counts, engagement rates
-- **Trend Analysis**: Hashtag extraction and content categorization
-- **Real-time Progress**: Live updates while fetching data
-- **Performance Score**: 0-100 composite performance rating
+**No expensive analytics subscriptions needed - 100% free!**
+
+</div>
+
+### ✨ Key Features:
+
+- **Shorts Support** - Dedicated analytics for videos ≤60 seconds
+- **Detailed Metrics** - Views, likes, comments, engagement rates, subscriber counts
+- **Trend Analysis** - Hashtag extraction and content categorization
+- **Real-time Progress** - Live updates while fetching data
+- **Performance Score** - 0-100 composite performance rating
+- **Smart Analysis** - Automatically identifies high-performing content and gaps
+- **Export Ready** - All data in familiar Google Sheets format
 
 ## Setup
 
-### 1. Create Google Sheet & Add Code
+<div align="center">
+
+🚀 **Get started in just 3 steps!**
+
+</div>
+
+### 1️⃣ Create Google Sheet & Add Code
+
+<div align="center">
+
+[![Google Sheets](https://img.shields.io/badge/Open-Google%20Sheets-34A853?style=for-the-badge&logo=googlesheets&logoColor=white)](https://sheets.google.com)
+
+</div>
 
 1. Go to [Google Sheets](https://sheets.google.com) and create a new sheet
 2. Open **Extensions** → **Apps Script**
 3. Delete any existing code in the editor
 4. Copy and paste ALL the code from `youtube-assistant.js`
-5. Save the project (Ctrl+S or Cmd+S)
+5. Save the project (`cmd + s` or `ctrl + s`)
 6. **Important**: Refresh your Google Sheet to see the menu appear
 
-### 2. Get YouTube API Key
+### 2️⃣ Get YouTube API Key 🔑
 
-- Visit [Google Cloud Console](https://console.cloud.google.com/)
-- Create a new project or select existing one
-- Enable [YouTube Data API v3](https://console.cloud.google.com/apis/api/youtube.googleapis.com) in APIs & Services → Library
-- Create credentials → API Key and Copy the API key
+<div align="center">
 
-### 3. Configure API Key
+[![Google Cloud Console](https://img.shields.io/badge/Open-Google%20Cloud%20Console-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://console.cloud.google.com/)
+
+</div>
+
+1. Visit [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable [YouTube Data API v3](https://console.cloud.google.com/apis/api/youtube.googleapis.com) in APIs & Services → Library
+4. Create credentials → API Key and Copy the API key
+
+### 3️⃣ Configure API Key
 
 **Option A: Use the menu (Recommended)**
 
@@ -149,6 +185,9 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 
 ## Use Cases & Success Stories
 
+<details>
+<summary>See real-world applications and success stories</summary>
+
 ### 📺 Content Creators
 
 - **Find Winning Topics**: Discover high-engagement content in your niche
@@ -167,64 +206,78 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 - **Academic Studies**: Gather YouTube data for research projects
 - **Trend Analysis**: Track content evolution over time
 
+</details>
+
 ## Troubleshooting
 
-**"Execution started" but nothing happens?**
+### 1. "Execution started" but nothing happens?
 
-1. Check the **Execution log** in Apps Script for error messages
-2. Run **YouTube Assistant** → **Test Setup** to check if everything is configured
-3. Make sure you configured your API key using the menu or setupApiKey function
+- Check the **Execution log** in Apps Script for error messages
+- Run **YouTube Assistant** → **Test Setup** to check if everything is configured
+- Make sure you configured your API key using the menu or setupApiKey function
 
-**Menu not showing up?**
+### 2. Menu not showing up?
 
-1. Refresh your Google Sheet (F5 or Cmd+R)
-2. Try running the script again from Apps Script
+- Refresh your Google Sheet (`cmd + r` or `F5`)
+- Try running the script again from Apps Script
 
-**"Invalid API key" error?**
+### 3. "Invalid API key" error?
 
 - Double-check your API key is copied correctly (no extra spaces)
 - Make sure YouTube Data API v3 is enabled in Google Cloud Console
 - Try reconfiguring using **YouTube Assistant** → **Configure API Key**
 - Run **YouTube Assistant** → **Test Setup** to verify configuration
 
-**Tool running slowly?**
+### 4. Tool running slowly?
 
 - Use fewer results (10-25 for quick analysis)
 - Try more specific search terms
 - Check your internet connection
 
-**Getting quota or rate limit errors?**
+### 5. Getting quota or rate limit errors?
 
 - Reduce the number of results per search
 - Wait a few minutes before trying again
 
-**Still having issues?**
+### 6. Still having issues?
 
-1. Run **YouTube Assistant** → **Test Setup** from the menu
-2. Check the execution log in Apps Script for detailed error messages
-3. Make sure all the code from `youtube-assistant.js` is copied correctly
+- Run **YouTube Assistant** → **Test Setup** from the menu
+- Check the execution log in Apps Script for detailed error messages
+- Make sure all the code from `youtube-assistant.js` is copied correctly
 
-## 🤝 Contributing
+## 🤝 Contributing & Support
 
-We welcome contributions! Here's how you can help:
+<div align="center">
 
-- 🐛 **Report Bugs**: Found an issue? [Open an issue](https://github.com/clairechung/YoutubeAssistant/issues/new)
-- 💡 **Suggest Features**: Have ideas? We'd love to hear them!
-- 🔧 **Submit PRs**: Code improvements are always welcome
-- ⭐ **Star the Repo**: Help others discover this tool!
+**Help make this tool even better!**
 
-## 🙏 Support
+[![Star this repo](https://img.shields.io/badge/⭐-Star%20this%20repo-yellow?style=for-the-badge)](https://github.com/clairechung/YoutubeAssistant)
+[![Feature Request](https://img.shields.io/badge/💡-Feature%20Request-blue?style=for-the-badge)](https://github.com/clairechung/YoutubeAssistant/issues/new)
+[![Submit PR](https://img.shields.io/badge/🔧-Submit%20PR-green?style=for-the-badge)](https://github.com/clairechung/YoutubeAssistant/pulls)
 
-If this tool helped you, consider:
+</div>
 
-- ⭐ Starring this repository
-- 🐦 Sharing on social media
-- � Telling other creators about it
+### 🛠️ Ways to Contribute:
 
-**License**: Apache 2.0 - free to use, modify, and distribute with attribution.
+- **Report Bugs** - Found an issue? Help us fix it!
+- **Suggest Features** - Have ideas? We'd love to hear them
+- **Submit PRs** - Code improvements are always welcome
+
+### ❤️ Show Support:
+
+- **⭐️ Star this repo** - Help others discover this tool
+- **Share on social** - Spread the word to fellow creators
+- **Tell friends** - Word of mouth is the best marketing
+
+<br>
+<div align="center">
+
+**Made with 🤍 for the YouTube creator community**
+
+[![GitHub](https://img.shields.io/badge/GitHub-clairechung-181717?style=for-the-badge&logo=github)](https://github.com/clairechung)
 
 ---
 
-**Made with ❤️ for the YouTube creator community**
+_Licensed under the Apache License 2.0_
 
-_Transform your YouTube strategy with data-driven insights - no expensive tools required!_
+</div>
