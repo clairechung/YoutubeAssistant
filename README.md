@@ -41,10 +41,11 @@ A simple YouTube analytics tool for Google Sheets. Analyze videos from Shorts to
 
 ## How to Use
 
-1. Enter search term in **B1** (e.g., "javascript tutorial")
-2. Enter number of results in **D1** (recommended: 25-50)
-3. Click **YouTube Assistant** → **Fetch YouTube Data**
-4. Wait for completion (progress shown in F1)
+1. Click **YouTube Assistant** → **Setup New Sheet** to generate a new analysis sheet
+2. Enter search term in **B1** (e.g., "javascript tutorial")
+3. Enter number of results in **D1** (recommended: 25-50)
+4. Click **YouTube Assistant** → **Fetch YouTube Data**
+5. Wait for completion (progress shown in F1)
 
 ## Data Columns
 

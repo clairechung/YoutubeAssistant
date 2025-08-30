@@ -1,6 +1,5 @@
 // YouTube Assistant - Analytics Tool for Google Sheets
 
-// Analytics Engine
 class AnalyticsEngine {
   constructor() {
     this.trendingThreshold = 2.0;
@@ -17,13 +16,13 @@ class AnalyticsEngine {
       viewsPerHour: hoursElapsed > 0 ? (viewCount / hoursElapsed).toFixed(2) : 0,
       viewsPerDay: daysElapsed > 0 ? (viewCount / daysElapsed).toFixed(0) : 0,
       hoursElapsed: hoursElapsed.toFixed(1),
-      daysElapsed: daysElapsed.toFixed(1)
+      daysElapsed: daysElapsed.toFixed(1),
     };
   }
 
   // Find videos with high engagement
   identifyTrendingContent(videoDataset) {
-    return videoDataset.filter(video => {
+    return videoDataset.filter((video) => {
       const engagementRate = this.calculateEngagementRate(
         video.viewCount,
         video.likeCount,
@@ -38,7 +37,7 @@ class AnalyticsEngine {
     const dayStats = {};
     const hourStats = {};
 
-    videoDataset.forEach(video => {
+    videoDataset.forEach((video) => {
       const date = new Date(video.publishedAt);
       const dayOfWeek = date.getDay();
       const hour = date.getHours();
@@ -47,15 +46,15 @@ class AnalyticsEngine {
       hourStats[hour] = (hourStats[hour] || 0) + 1;
     });
 
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const bestDay = Object.keys(dayStats).reduce((a, b) => dayStats[a] > dayStats[b] ? a : b);
-    const bestHour = Object.keys(hourStats).reduce((a, b) => hourStats[a] > hourStats[b] ? a : b);
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const bestDay = Object.keys(dayStats).reduce((a, b) => (dayStats[a] > dayStats[b] ? a : b));
+    const bestHour = Object.keys(hourStats).reduce((a, b) => (hourStats[a] > hourStats[b] ? a : b));
 
     return {
       bestUploadDay: dayNames[bestDay],
       bestUploadHour: `${bestHour}:00`,
       dayDistribution: dayStats,
-      hourDistribution: hourStats
+      hourDistribution: hourStats,
     };
   }
 
@@ -66,7 +65,7 @@ class AnalyticsEngine {
       likeCount = 0,
       commentCount = 0,
       subscriberCount = 0,
-      durationSeconds = 0
+      durationSeconds = 0,
     } = metrics;
 
     const engagementRate = this.calculateEngagementRate(viewCount, likeCount, commentCount);
@@ -77,15 +76,17 @@ class AnalyticsEngine {
 
     // Duration factor
     let durationFactor = 1;
-    if (durationSeconds <= 60) durationFactor = 0.8; // Shorts penalty
+    if (durationSeconds <= 60)
+      durationFactor = 0.8; // Shorts penalty
     else if (durationSeconds > 1200) durationFactor = 0.9;
 
-    const score = (
-      normalizedEngagement * 0.4 +
-      likeRatio * 0.3 +
-      commentRatio * 0.2 +
-      (viewCount > 1000 ? 0.1 : 0)
-    ) * durationFactor * 100;
+    const score =
+      (normalizedEngagement * 0.4 +
+        likeRatio * 0.3 +
+        commentRatio * 0.2 +
+        (viewCount > 1000 ? 0.1 : 0)) *
+      durationFactor *
+      100;
 
     return Math.round(Math.min(score, 100));
   }
@@ -102,7 +103,7 @@ class AnalyticsEngine {
     const durations = { shorts: 0, midForm: 0, longForm: 0 };
     const totalVideos = videoDataset.length;
 
-    videoDataset.forEach(video => {
+    videoDataset.forEach((video) => {
       categories[video.category] = (categories[video.category] || 0) + 1;
 
       if (video.durationSeconds <= 60) durations.shorts++;
@@ -110,14 +111,19 @@ class AnalyticsEngine {
       else durations.longForm++;
     });
 
-    const underrepresentedCategories = Object.keys(categories)
-      .filter(cat => (categories[cat] / totalVideos) < 0.1);
+    const underrepresentedCategories = Object.keys(categories).filter(
+      (cat) => categories[cat] / totalVideos < 0.1
+    );
 
     return {
       categoryDistribution: categories,
       durationDistribution: durations,
       underrepresentedCategories,
-      suggestions: this.generateContentSuggestions(durations, underrepresentedCategories, searchQuery)
+      suggestions: this.generateContentSuggestions(
+        durations,
+        underrepresentedCategories,
+        searchQuery
+      ),
     };
   }
 
@@ -126,13 +132,15 @@ class AnalyticsEngine {
     const suggestions = [];
 
     if (durations.shorts < durations.midForm * 0.3) {
-      suggestions.push(`Consider creating Shorts content about "${searchQuery}" - underrepresented format`);
+      suggestions.push(
+        `Consider creating Shorts content about "${searchQuery}" - underrepresented format`
+      );
     }
     if (durations.longForm < durations.midForm * 0.2) {
       suggestions.push(`Opportunity for in-depth long-form content on "${searchQuery}"`);
     }
 
-    underrepresentedCategories.forEach(category => {
+    underrepresentedCategories.forEach((category) => {
       suggestions.push(`Low competition in ${category} for "${searchQuery}"`);
     });
 
@@ -140,7 +148,6 @@ class AnalyticsEngine {
   }
 }
 
-// API Manager
 class YouTubeApiManager {
   constructor() {
     this.maxRetries = 3;
@@ -166,34 +173,34 @@ class YouTubeApiManager {
       const response = UrlFetchApp.fetch(url);
       const responseCode = response.getResponseCode();
 
-      if (responseCode === 200) {
-        return JSON.parse(response.getContentText());
+      switch (responseCode) {
+        case 200:
+          return JSON.parse(response.getContentText());
+
+        case 429:
+          if (retryCount < this.maxRetries) {
+            const delay = Math.min(this.baseDelay * Math.pow(2, retryCount), this.maxDelay);
+            Logger.log(`Rate limited. Retrying in ${delay}ms (attempt ${retryCount + 1})`);
+            Utilities.sleep(delay);
+            return this.makeApiRequest(url, retryCount + 1);
+          }
+          throw new Error("Rate limit exceeded. Please try again later.");
+
+        case 403:
+          const errorData = JSON.parse(response.getContentText());
+          if (errorData.error.errors[0].reason === "quotaExceeded")
+            throw new Error(
+              "Daily API quota exceeded. Please try again tomorrow or upgrade your quota."
+            );
+
+          throw new Error("API access forbidden. Please check your API key permissions.");
+
+        case 401:
+          throw new Error("Invalid API key. Please check your YouTube API key configuration.");
+
+        default:
+          throw new Error(`API request failed with status ${responseCode}`);
       }
-
-      if (responseCode === 429) {
-        if (retryCount < this.maxRetries) {
-          const delay = Math.min(this.baseDelay * Math.pow(2, retryCount), this.maxDelay);
-          Logger.log(`Rate limited. Retrying in ${delay}ms (attempt ${retryCount + 1})`);
-          Utilities.sleep(delay);
-          return this.makeApiRequest(url, retryCount + 1);
-        }
-        throw new Error("Rate limit exceeded. Please try again later.");
-      }
-
-      if (responseCode === 403) {
-        const errorData = JSON.parse(response.getContentText());
-        if (errorData.error.errors[0].reason === "quotaExceeded") {
-          throw new Error("Daily API quota exceeded. Please try again tomorrow or upgrade your quota.");
-        }
-        throw new Error("API access forbidden. Please check your API key permissions.");
-      }
-
-      if (responseCode === 401) {
-        throw new Error("Invalid API key. Please check your YouTube API key configuration.");
-      }
-
-      throw new Error(`API request failed with status ${responseCode}`);
-
     } catch (error) {
       if (retryCount < this.maxRetries && error.message.includes("network")) {
         const delay = this.baseDelay * Math.pow(2, retryCount);
@@ -242,8 +249,10 @@ function monitorQuotaUsage(requestCount) {
 
   const today = new Date().toDateString();
   const usageKey = `quota_usage_${today}`;
-  const currentUsage = parseInt(PropertiesService.getScriptProperties().getProperty(usageKey) || "0");
-  const newUsage = currentUsage + (requestCount * 100);
+  const currentUsage = parseInt(
+    PropertiesService.getScriptProperties().getProperty(usageKey) || "0"
+  );
+  const newUsage = currentUsage + requestCount * 100;
 
   PropertiesService.getScriptProperties().setProperty(usageKey, newUsage.toString());
 
@@ -251,8 +260,8 @@ function monitorQuotaUsage(requestCount) {
     const remainingQuota = dailyQuota - newUsage;
     SpreadsheetApp.getUi().alert(
       `Quota Warning: You've used approximately ${Math.round((newUsage / dailyQuota) * 100)}% of your daily API quota.\n` +
-      `Estimated remaining quota: ${remainingQuota} units.\n\n` +
-      `Consider reducing result counts or waiting until tomorrow for quota reset.`
+        `Estimated remaining quota: ${remainingQuota} units.\n\n` +
+        `Consider reducing result counts or waiting until tomorrow for quota reset.`
     );
   }
 }
@@ -279,7 +288,9 @@ function fetchYouTubeData() {
   const analyticsEngine = new AnalyticsEngine();
 
   if (!apiManager.validateApiKey(apiKey)) {
-    SpreadsheetApp.getUi().alert("Invalid API key. Please check your YouTube API key configuration.");
+    SpreadsheetApp.getUi().alert(
+      "Invalid API key. Please check your YouTube API key configuration."
+    );
     return;
   }
 
@@ -291,11 +302,11 @@ function fetchYouTubeData() {
   if (!searchQuery || searchQuery.toString().trim() === "") {
     SpreadsheetApp.getUi().alert(
       "Search Term Required\n\n" +
-      "Please enter a search term in cell B1.\n\n" +
-      "Examples:\n" +
-      "• 'JavaScript tutorial'\n" +
-      "• 'cooking recipes'\n" +
-      "• 'fitness workout'"
+        "Please enter a search term in cell B1.\n\n" +
+        "Examples:\n" +
+        "• 'JavaScript tutorial'\n" +
+        "• 'cooking recipes'\n" +
+        "• 'fitness workout'"
     );
     return;
   }
@@ -303,11 +314,11 @@ function fetchYouTubeData() {
   if (!maxResults || isNaN(maxResults) || maxResults < 1 || maxResults > 200) {
     SpreadsheetApp.getUi().alert(
       "Invalid Result Count\n\n" +
-      "Please enter a valid number between 1 and 200 in cell D1.\n\n" +
-      "Recommendations:\n" +
-      "• 5-10 for quick analysis\n" +
-      "• 25-50 for comprehensive research\n" +
-      "• 100+ for market analysis (uses more API quota)"
+        "Please enter a valid number between 1 and 200 in cell D1.\n\n" +
+        "Recommendations:\n" +
+        "• 5-10 for quick analysis\n" +
+        "• 25-50 for comprehensive research\n" +
+        "• 100+ for market analysis (uses more API quota)"
     );
     return;
   }
@@ -319,18 +330,36 @@ function fetchYouTubeData() {
     clearSheetDataExceptA1(sheet);
     renameSheet(sheet, searchQuery);
 
-    sheet.getRange("F1").setValue("🔄 Initializing YouTube data fetch...")
+    sheet
+      .getRange("F1")
+      .setValue("🔄 Initializing YouTube data fetch...")
       .setFontColor("#1a73e8")
       .setFontWeight("bold");
 
     sheet.setFrozenRows(2);
 
     const headers = [
-      "Category", "Thumbnail", "Video Title", "Views", "Description",
-      "Channel Name", "Subscribers", "Upload Date", "Tags", "Hashtags",
-      "Likes", "Like Rate (%)", "Comment Rate (%)", "Engagement Rate (%)",
-      "Comments", "Duration", "Content Type", "Performance Score",
-      "Views/Day", "High Engagement", "Captions Available"
+      "Category",
+      "Thumbnail",
+      "Video Title",
+      "Views",
+      "Description",
+      "Channel Name",
+      "Subscribers",
+      "Upload Date",
+      "Tags",
+      "Hashtags",
+      "Likes",
+      "Like Rate (%)",
+      "Comment Rate (%)",
+      "Engagement Rate (%)",
+      "Comments",
+      "Duration",
+      "Content Type",
+      "Performance Score",
+      "Views/Day",
+      "High Engagement",
+      "Captions Available",
     ];
 
     const headerRange = sheet.getRange(2, 1, 1, headers.length);
@@ -354,8 +383,10 @@ function fetchYouTubeData() {
         break;
       }
 
-      const videoIds = searchData.items.map(item => item.id.videoId).join(",");
-      const channelIds = [...new Set(searchData.items.map(item => item.snippet.channelId))].join(",");
+      const videoIds = searchData.items.map((item) => item.id.videoId).join(",");
+      const channelIds = [...new Set(searchData.items.map((item) => item.snippet.channelId))].join(
+        ","
+      );
 
       const videoDetailsData = apiManager.getVideoDetails(videoIds, apiKey);
       const channelDetailsData = apiManager.getChannelDetails(channelIds, apiKey);
@@ -364,17 +395,15 @@ function fetchYouTubeData() {
 
       // Create channel subscribers mapping
       const channelSubscribersMap = {};
-      channelDetailsData.items.forEach(channel => {
+      channelDetailsData.items.forEach((channel) => {
         channelSubscribersMap[channel.id] = channel.statistics.subscriberCount;
       });
 
       // Process video data
-      const videoData = videoDetailsData.items.map(item => {
+      const videoData = videoDetailsData.items.map((item) => {
         const videoId = item.id;
         const title = item.snippet.title;
-        const safeTitle = title
-          .replace(/[\/\\?*[\]:]/g, "-")
-          .replace(/"/g, "'");
+        const safeTitle = title.replace(/[\/\\?*[\]:]/g, "-").replace(/"/g, "'");
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
         const thumbnailUrl = item.snippet.thumbnails.high?.url || null;
         const description = item.snippet.description || "";
@@ -391,15 +420,21 @@ function fetchYouTubeData() {
 
         const contentTypeInfo = getContentType(item.contentDetails?.duration);
         const hashtags = extractHashtags(title, description);
-        const shortsMetrics = calculateShortsMetrics(item.statistics, contentTypeInfo.durationSeconds);
+        const shortsMetrics = calculateShortsMetrics(
+          item.statistics,
+          contentTypeInfo.durationSeconds
+        );
 
-        const velocityMetrics = analyticsEngine.calculateVelocityMetrics(viewCount, item.snippet.publishedAt);
+        const velocityMetrics = analyticsEngine.calculateVelocityMetrics(
+          viewCount,
+          item.snippet.publishedAt
+        );
         const performanceScore = analyticsEngine.generatePerformanceScore({
           viewCount: parseInt(viewCount),
           likeCount: parseInt(likeCount),
           commentCount: parseInt(commentCount),
           subscriberCount: parseInt(channelSubscribersMap[channelId] || 0),
-          durationSeconds: contentTypeInfo.durationSeconds
+          durationSeconds: contentTypeInfo.durationSeconds,
         });
 
         const channelSubscribers = channelSubscribersMap[channelId]
@@ -408,12 +443,10 @@ function fetchYouTubeData() {
         const tags = item.snippet.tags ? item.snippet.tags.join(", ") : "";
         const hashtagsText = hashtags.length > 0 ? hashtags.join(", ") : "";
 
-        const likeToViewPercentage = viewCount > 0
-          ? `${shortsMetrics.likeRate.toFixed(2)}%`
-          : "No views";
-        const commentToViewPercentage = commentCount > 0
-          ? `${shortsMetrics.commentRate.toFixed(2)}%`
-          : "No comments";
+        const likeToViewPercentage =
+          viewCount > 0 ? `${shortsMetrics.likeRate.toFixed(2)}%` : "No views";
+        const commentToViewPercentage =
+          commentCount > 0 ? `${shortsMetrics.commentRate.toFixed(2)}%` : "No comments";
 
         return [
           category,
@@ -441,14 +474,14 @@ function fetchYouTubeData() {
       });
 
       // Collect video data for analysis
-      videoDetailsData.items.forEach(item => {
+      videoDetailsData.items.forEach((item) => {
         allVideoData.push({
           publishedAt: item.snippet.publishedAt,
           viewCount: parseInt(item.statistics?.viewCount || 0),
           likeCount: parseInt(item.statistics?.likeCount || 0),
           commentCount: parseInt(item.statistics?.commentCount || 0),
           title: item.snippet.title,
-          channelTitle: item.snippet.channelTitle
+          channelTitle: item.snippet.channelTitle,
         });
       });
 
@@ -466,7 +499,9 @@ function fetchYouTubeData() {
           sheet.getRange(3 + totalFetched + index, 9).setNote(tags);
         }
         if (hashtags.length > 0) {
-          sheet.getRange(3 + totalFetched + index, 10).setNote(`Full hashtags: ${hashtags.join(", ")}`);
+          sheet
+            .getRange(3 + totalFetched + index, 10)
+            .setNote(`Full hashtags: ${hashtags.join(", ")}`);
         }
       });
 
@@ -475,9 +510,10 @@ function fetchYouTubeData() {
 
       // Set column widths
       sheet.setRowHeights(3, videoData.length, 120);
-      sheet.setColumnWidths(3, 1, 200);
-      sheet.setColumnWidths(5, 1, 300);
-      sheet.setColumnWidths(6, 1, 150);
+      sheet.setColumnWidth(2, 170); // Thumbnail column (B) - slightly wider than 160px for padding
+      sheet.setColumnWidth(3, 200); // Video Title column (C)
+      sheet.setColumnWidth(5, 300); // Description column (E)
+      sheet.setColumnWidth(6, 150); // Channel Name column (F)
 
       // Insert data
       sheet.getRange(3 + totalFetched, 1, videoData.length, headers.length).setValues(videoData);
@@ -485,8 +521,14 @@ function fetchYouTubeData() {
 
       // Update progress
       const progressPercent = Math.round((totalFetched / maxResults) * 100);
-      const progressBar = "█".repeat(Math.floor(progressPercent / 5)) + "░".repeat(20 - Math.floor(progressPercent / 5));
-      sheet.getRange("F1").setValue(`🔄 Progress: ${progressBar} ${progressPercent}% (${totalFetched}/${maxResults})`);
+      const progressBar =
+        "█".repeat(Math.floor(progressPercent / 5)) +
+        "░".repeat(20 - Math.floor(progressPercent / 5));
+      sheet
+        .getRange("F1")
+        .setValue(
+          `🔄 Progress: ${progressBar} ${progressPercent}% (${totalFetched}/${maxResults})`
+        );
 
       if (totalFetched >= maxResults) {
         break;
@@ -510,13 +552,15 @@ function fetchYouTubeData() {
     if (contentGaps.suggestions.length > 0) {
       sheet.getRange(analysisRow, 1).setValue("Content Opportunities:").setFontWeight("bold");
       analysisRow++;
-      contentGaps.suggestions.forEach(suggestion => {
+      contentGaps.suggestions.forEach((suggestion) => {
         sheet.getRange(analysisRow, 1).setValue(`• ${suggestion}`);
         analysisRow++;
       });
     }
 
-    sheet.getRange("F1").setValue(`✅ Completed! Analyzed ${totalFetched} videos for "${searchQuery}"`)
+    sheet
+      .getRange("F1")
+      .setValue(`✅ Completed! Analyzed ${totalFetched} videos for "${searchQuery}"`)
       .setFontColor("#137333")
       .setFontWeight("bold");
 
@@ -528,22 +572,26 @@ function fetchYouTubeData() {
     let userMessage = `An error occurred: ${error.message}\n\n`;
 
     if (error.message.includes("quota")) {
-      userMessage += "Suggestions:\n" +
+      userMessage +=
+        "Suggestions:\n" +
         "• Wait until tomorrow for quota reset\n" +
         "• Consider upgrading your Google Cloud quota\n" +
         "• Reduce the number of results requested";
     } else if (error.message.includes("API key")) {
-      userMessage += "Suggestions:\n" +
+      userMessage +=
+        "Suggestions:\n" +
         "• Check that your API key is correct\n" +
         "• Ensure YouTube Data API v3 is enabled\n" +
         "• Verify API key permissions in Google Cloud Console";
     } else if (error.message.includes("Rate limit")) {
-      userMessage += "Suggestions:\n" +
+      userMessage +=
+        "Suggestions:\n" +
         "• Wait a few minutes before trying again\n" +
         "• Reduce the number of results requested\n" +
         "• Consider spreading requests over time";
     } else {
-      userMessage += "Suggestions:\n" +
+      userMessage +=
+        "Suggestions:\n" +
         "• Check your internet connection\n" +
         "• Try again in a few minutes\n" +
         "• Verify your search terms are valid";
@@ -560,16 +608,14 @@ function clearSheetDataExceptA1(sheet) {
 }
 
 function truncateDescription(description, maxLength = 100) {
-  return description.length > maxLength
-    ? `${description.substring(0, maxLength)}...`
-    : description;
+  return description.length > maxLength ? `${description.substring(0, maxLength)}...` : description;
 }
 
 function formatDate(isoString) {
   const date = new Date(isoString);
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}.${month}.${day}`;
 }
 
@@ -579,7 +625,7 @@ function formatNumber(number) {
 
 function formatDuration(isoDuration) {
   // Handle null, undefined, or non-string values
-  if (!isoDuration || typeof isoDuration !== 'string') {
+  if (!isoDuration || typeof isoDuration !== "string") {
     return "0:00";
   }
 
@@ -592,18 +638,19 @@ function formatDuration(isoDuration) {
   const minutes = match[2] ? match[2].slice(0, -1) : "00";
   const seconds = match[3] ? match[3].slice(0, -1) : "00";
 
-  return (hours !== "0" ? `${hours}:` : "") +
-    `${minutes.padStart(2, "0")}:${seconds.padStart(2, "0")}`;
+  return (
+    (hours !== "0" ? `${hours}:` : "") + `${minutes.padStart(2, "0")}:${seconds.padStart(2, "0")}`
+  );
 }
 
 function getContentType(isoDuration) {
   // Handle null, undefined, or non-string values
-  if (!isoDuration || typeof isoDuration !== 'string') {
+  if (!isoDuration || typeof isoDuration !== "string") {
     return {
       type: "Unknown",
       category: "unknown",
       durationSeconds: 0,
-      isShorts: false
+      isShorts: false,
     };
   }
 
@@ -613,7 +660,7 @@ function getContentType(isoDuration) {
       type: "Unknown",
       category: "unknown",
       durationSeconds: 0,
-      isShorts: false
+      isShorts: false,
     };
   }
 
@@ -639,7 +686,7 @@ function getContentType(isoDuration) {
     type,
     category,
     durationSeconds: totalSeconds,
-    isShorts: totalSeconds <= 60
+    isShorts: totalSeconds <= 60,
   };
 }
 
@@ -648,7 +695,7 @@ function extractHashtags(title, description) {
   const hashtagRegex = /#[\w\u0590-\u05ff]+/g;
   const hashtags = text.match(hashtagRegex) || [];
 
-  return [...new Set(hashtags.map(tag => tag.toLowerCase()))];
+  return [...new Set(hashtags.map((tag) => tag.toLowerCase()))];
 }
 
 function calculateShortsMetrics(stats, durationSeconds) {
@@ -661,7 +708,7 @@ function calculateShortsMetrics(stats, durationSeconds) {
     likeRate: 0,
     commentRate: 0,
     viewsPerSecond: 0,
-    isHighEngagement: false
+    isHighEngagement: false,
   };
 
   if (viewCount > 0) {
@@ -677,11 +724,20 @@ function calculateShortsMetrics(stats, durationSeconds) {
 
 function getCategoryName(categoryId) {
   const categories = {
-    "1": "Film & Animation", "2": "Autos & Vehicles", "10": "Music",
-    "15": "Pets & Animals", "17": "Sports", "19": "Travel & Events",
-    "20": "Gaming", "22": "People & Blogs", "23": "Comedy",
-    "24": "Entertainment", "25": "News & Politics", "26": "Howto & Style",
-    "27": "Education", "28": "Science & Technology"
+    1: "Film & Animation",
+    2: "Autos & Vehicles",
+    10: "Music",
+    15: "Pets & Animals",
+    17: "Sports",
+    19: "Travel & Events",
+    20: "Gaming",
+    22: "People & Blogs",
+    23: "Comedy",
+    24: "Entertainment",
+    25: "News & Politics",
+    26: "Howto & Style",
+    27: "Education",
+    28: "Science & Technology",
   };
   return categories[categoryId] || "Unknown";
 }
@@ -716,19 +772,19 @@ function applyConditionalFormatting(sheet, dataLength, startRow) {
 
 function enhanceThumbnailDisplay(thumbnailUrl) {
   if (!thumbnailUrl) return "No thumbnail";
-  return `=IMAGE("${thumbnailUrl}", 4, 120, 90)`;
+  return `=IMAGE("${thumbnailUrl}", 4, 120, 160)`;
 }
 
 // Menu and setup functions
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('YouTube Assistant')
-    .addItem('Fetch YouTube Data', 'fetchYouTubeData')
-    .addItem('Setup New Sheet', 'setupNewSheet')
-    .addItem('Configure API Key', 'configureApiKey')
+  ui.createMenu("YouTube Assistant")
+    .addItem("Fetch YouTube Data", "fetchYouTubeData")
+    .addItem("Setup New Sheet", "setupNewSheet")
+    .addItem("Configure API Key", "configureApiKey")
     .addSeparator()
-    .addItem('Test Setup', 'testSetup')
-    .addItem('Help & Documentation', 'showHelp')
+    .addItem("Test Setup", "testSetup")
+    .addItem("Help & Documentation", "showHelp")
     .addToUi();
 }
 
@@ -736,12 +792,37 @@ function setupNewSheet() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const newSheet = spreadsheet.insertSheet();
 
-  newSheet.getRange("A1").setValue("YouTube Assistant").setFontWeight("bold").setFontSize(14);
-  newSheet.getRange("B1").setValue("Enter search term here");
-  newSheet.getRange("D1").setValue(25);
-  newSheet.getRange("F1").setValue("Ready to analyze!");
-
+  // Apply light gray background to entire first row (A1:F1)
   newSheet.getRange("A1:F1").setBackground("#f0f0f0");
+
+  // Clear labels and instructions
+  newSheet.getRange("A1").setValue("Keywords:").setFontWeight("bold").setFontSize(12);
+  newSheet.getRange("C1").setValue("Results:").setFontWeight("bold").setFontSize(12);
+  newSheet.getRange("E1").setValue("Status:").setFontWeight("bold").setFontSize(12);
+
+  // User input cells with dark orange font
+  newSheet
+    .getRange("B1")
+    .setValue("Enter search term here")
+    .setFontWeight("bold")
+    .setFontSize(12)
+    .setFontColor("#e69139");
+
+  newSheet
+    .getRange("D1")
+    .setValue(25)
+    .setFontWeight("bold")
+    .setFontSize(12)
+    .setFontColor("#e69139");
+
+  // Status cell
+  newSheet.getRange("F1").setValue("Ready to analyze!").setFontSize(12);
+
+  // Set consistent font size for labels
+  newSheet.getRange("A1:F1").setFontSize(12);
+
+  // Set row height for first row to accommodate content
+  newSheet.setRowHeight(1, 30);
 }
 
 // Simple function to setup API key (as mentioned in README)
@@ -774,7 +855,6 @@ function testSetup() {
     console.log(`✅ Analytics working: ${engagementRate}% engagement rate`);
 
     console.log("🎉 Setup test completed! Ready to use YouTube Assistant.");
-
   } catch (error) {
     console.log("❌ Setup test failed:", error.message);
     console.log("Please check your code and try again.");
@@ -784,8 +864,8 @@ function testSetup() {
 function configureApiKey() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
-    'Configure YouTube API Key',
-    'Please enter your YouTube Data API v3 key:',
+    "Configure YouTube API Key",
+    "Please enter your YouTube Data API v3 key:",
     ui.ButtonSet.OK_CANCEL
   );
 
@@ -793,9 +873,9 @@ function configureApiKey() {
     const apiKey = result.getResponseText().trim();
     if (apiKey) {
       PropertiesService.getScriptProperties().setProperty("apiKey", apiKey);
-      ui.alert('Success!', 'API key has been configured successfully.', ui.ButtonSet.OK);
+      ui.alert("Success!", "API key has been configured successfully.", ui.ButtonSet.OK);
     } else {
-      ui.alert('Error', 'Please enter a valid API key.', ui.ButtonSet.OK);
+      ui.alert("Error", "Please enter a valid API key.", ui.ButtonSet.OK);
     }
   }
 }
@@ -803,13 +883,13 @@ function configureApiKey() {
 function showHelp() {
   const ui = SpreadsheetApp.getUi();
   ui.alert(
-    'YouTube Assistant Help',
-    'How to use:\n\n' +
-    '1. Enter search term in cell B1\n' +
-    '2. Enter number of results in cell D1 (1-200)\n' +
-    '3. Click "Fetch YouTube Data" from the menu\n' +
-    '4. Wait for analysis to complete\n\n' +
-    'Need API key? Visit Google Cloud Console and enable YouTube Data API v3.',
+    "YouTube Assistant Help",
+    "How to use:\n\n" +
+      "1. Enter search term in cell B1\n" +
+      "2. Enter number of results in cell D1 (1-200)\n" +
+      '3. Click "Fetch YouTube Data" from the menu\n' +
+      "4. Wait for analysis to complete\n\n" +
+      "Need API key? Visit Google Cloud Console and enable YouTube Data API v3.",
     ui.ButtonSet.OK
   );
 }
