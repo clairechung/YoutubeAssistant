@@ -1,0 +1,17 @@
+{
+  "name": "youtube-assistant",
+  "version": "1.0.0",
+  "description": "YouTube API assistant for Google Apps Script",
+  "main": "youtube-assistant.js",
+  "scripts": {
+    "test": "node runTests.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  },
+  "keywords": ["youtube", "google-apps-script", "api"],
+  "author": "",
+  "license": "MIT"
+}
