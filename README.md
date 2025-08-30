@@ -63,7 +63,7 @@ A powerful YouTube analytics tool that turns complex video data into clear, acti
 
 </div>
 
-### 1️⃣ Create Google Sheet & Add Code
+### 1. Create Google Sheet & Add Code
 
 <div align="center">
 
@@ -78,7 +78,7 @@ A powerful YouTube analytics tool that turns complex video data into clear, acti
 5. Save the project (`cmd + s` or `ctrl + s`)
 6. **Important**: Refresh your Google Sheet to see the menu appear
 
-### 2️⃣ Get YouTube API Key 🔑
+### 2. Get YouTube API Key 🔑
 
 <div align="center">
 
@@ -91,7 +91,7 @@ A powerful YouTube analytics tool that turns complex video data into clear, acti
 3. Enable [YouTube Data API v3](https://console.cloud.google.com/apis/api/youtube.googleapis.com) in APIs & Services → Library
 4. Create credentials → API Key and Copy the API key
 
-### 3️⃣ Configure API Key
+### 3. Configure API Key
 
 **Option A: Use the menu (Recommended)**
 
@@ -118,11 +118,11 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 
 ### Key Insights You'll Discover:
 
-- **🏆 Top Performers**: Videos with highest engagement and performance scores
-- **📊 Content Gaps**: Underrepresented categories and formats in your niche
-- **⏰ Best Upload Times**: Optimal days and hours for publishing
-- **🔥 Commonly Used Hashtags**: Most effective hashtags in your topic area
-- **📈 Engagement Patterns**: What drives likes, comments, and views
+- **Top Performers**: Videos with highest engagement and performance scores
+- **Content Gaps**: Underrepresented categories and formats in your niche
+- **Best Upload Times**: Optimal days and hours for publishing
+- **Commonly Used Hashtags**: Most effective hashtags in your topic area
+- **Engagement Patterns**: What drives likes, comments, and views
 
 ## How to Use
 
@@ -148,7 +148,7 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 <details>
 <summary>Click to see all 21 data columns and metrics</summary>
 
-### 📈 Basic Metrics
+### Basic Metrics
 
 - **Category**: Video category (e.g., Education, Entertainment)
 - **Thumbnail**: Clickable video preview image
@@ -159,7 +159,7 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 - **Subscribers**: Channel subscriber count
 - **Upload Date**: When the video was published
 
-### 🏷️ Content Analysis
+### Content Analysis
 
 - **Tags**: Video tags from creator
 - **Hashtags**: Extracted hashtags from title and description
@@ -167,7 +167,7 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 - **Content Type**: Shorts/Mid-form/Long-form categorization
 - **Captions Available**: Whether video has captions
 
-### 💡 Engagement Metrics
+### Engagement Metrics
 
 - **Likes**: Total like count
 - **Like Rate (%)**: Likes as percentage of views
@@ -175,7 +175,7 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 - **Engagement Rate (%)**: Combined engagement metric
 - **Comments**: Total comment count
 
-### 🚀 Performance Indicators
+### Performance Indicators
 
 - **Performance Score**: 0-100 composite rating
 - **Views/Day**: Average daily views since upload
@@ -188,19 +188,19 @@ After running the analysis, you'll see a comprehensive spreadsheet like this:
 <details>
 <summary>See real-world applications and success stories</summary>
 
-### 📺 Content Creators
+### Content Creators
 
 - **Find Winning Topics**: Discover high-engagement content in your niche
 - **Optimize Upload Schedule**: Use data-driven timing for maximum reach
 - **Beat the Algorithm**: Identify trending hashtags and formats
 
-### 📈 Digital Marketers
+### Digital Marketers
 
 - **Competitor Analysis**: Analyze competitor content strategies
 - **Campaign Planning**: Find the best-performing content types
 - **ROI Tracking**: Measure content performance across campaigns
 
-### 🔬 Researchers & Analysts
+### Researchers & Analysts
 
 - **Market Research**: Understand content trends in any industry
 - **Academic Studies**: Gather YouTube data for research projects
