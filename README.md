@@ -15,7 +15,7 @@ A powerful YouTube analytics tool that turns complex video data into clear, acti
 - [Features](#features)
 - [Setup](#setup)
 - [What You Get](#what-you-get)
-- [How to Use](#️how-to-use)
+- [How to Use](#how-to-use)
 - [Data Columns](#data-columns)
 - [Use Cases & Success Stories](#use-cases--success-stories)
 - [Troubleshooting](#troubleshooting)
